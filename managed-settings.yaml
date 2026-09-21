@@ -53,31 +53,29 @@ permissions:
   # We define `deny` rules for operations that are completely unnecessary in development.
   # If we need to limit an operation that is not completely unnecessary, we should define it in `ask` rather than `deny`.
   deny:
+    # We define only `Read(...)` rules, because a `Read(...)` deny rule already blocks the Edit and Write tools on the same path:
+    # - Configure tools with permission rules and hooks | Tools reference - Claude Code Docs
+    #   https://code.claude.com/docs/en/tools-reference#configure-tools-with-permission-rules-and-hooks
+    # > A Read(...) deny rule also blocks the Edit and Write tools on the same path, including creating a new file there,
+    # > because both tools change content Claude has to be able to read back.
+    # > The Read deny check requires Claude Code v2.1.208 or later on edits, and v2.1.228 or later on writes.
     # 1Password configuration
     - "Read(~/.config/op/**)"
-    - "Edit(~/.config/op/**)"
     # AWS configuration
     - "Read(~/.aws/**)"
-    - "Edit(~/.aws/**)"
     # GitHub CLI configuration
     - "Read(~/.config/gh/**)"
-    - "Edit(~/.config/gh/**)"
     # Docker secrets
     - "Read(//run/secrets/*)"
-    - "Edit(//run/secrets/*)"
     # Environment variables
     - "Read(**/.env)"
     - "Read(**/.env.*)"
-    - "Edit(**/.env)"
-    - "Edit(**/.env.*)"
     # Private keys
     - "Read(~/.ssh/**)"
-    - "Edit(~/.ssh/**)"
     # Data for analyzing tasks:
     # - Techniques that are invisible to Cloud Code: Analyzing data that cannot be input into AI
     #   https://zenn.dev/green_tea/articles/a994964786cb4f
     - "Read(~/datasets/**)"
-    - "Edit(~/datasets/**)"
 sandbox:
   # Claude Code user should always enable the sandbox for security:
   # - Configure the sandboxed Bash tool - Claude Code Docs

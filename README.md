@@ -14,7 +14,7 @@ A configuration that looks protective can silently protect nothing. Two examples
 This `managed-settings.json` is a ready-made baseline that applies the following:
 
 - The sandbox is required. Claude Code fails instead of running without it, and the unsandboxed retry escape hatch is off.
-- Secret paths are denied twice: in `permissions` for Claude's built-in Read and Edit tools, and in `sandbox.filesystem` for shell commands.
+- Secret paths are denied twice: in `permissions` for Claude's built-in Read, Edit, and Write tools, and in `sandbox.filesystem` for shell commands.
 - The GitHub token in `~/.config/gh/hosts.yml` is masked, so the GitHub CLI works without exposing the token to sandboxed commands.
 - Risky but necessary operations, such as `git push` and `rm`, ask for confirmation instead of being denied.
   - Currently, `git push` is not supported by Claude Code inside the sandbox (see below)
@@ -57,7 +57,7 @@ Remove `enableWeakerNestedSandbox` from your copy. It exists for unprivileged co
 
 Add the path to both places in `managed-settings.yaml`, because each covers a different tool:
 
-- `permissions.deny` as `Read(...)` and `Edit(...)` rules for Claude's built-in tools.
+- `permissions.deny` as a `Read(...)` rule for Claude's built-in tools. It also blocks the Edit and Write tools on the same path, so no `Edit(...)` rule is needed.
 - `sandbox.filesystem.denyRead` and `denyWrite` for shell commands.
 
 Write an absolute path with `//` in `permissions` and with a single `/` in `sandbox.filesystem`. Quote every value, because YAML reads an unquoted leading `*` as an alias.

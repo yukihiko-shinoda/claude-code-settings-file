@@ -41,7 +41,7 @@ Other commands:
 - Path syntax differs between sections:
   - `permissions` Read/Edit rules anchor a single leading `/` at the settings source. Absolute paths need `//` (for example `Read(//run/secrets/*)`).
   - `sandbox.filesystem` uses standard paths, where `/run/secrets/` is already absolute.
-- Secret paths appear in both `permissions.deny` and `sandbox.filesystem.denyRead`/`denyWrite` on purpose. Permission rules cover Claude's built-in Read and Edit tools, which run outside the sandbox, while the sandbox settings cover Bash subprocesses. Keep both lists in step when adding a path. The one exception is `~/.config/gh/`, which is not in `denyRead` (see "GitHub credentials and network").
+- Secret paths appear in both `permissions.deny` and `sandbox.filesystem.denyRead`/`denyWrite` on purpose. Permission rules cover Claude's built-in Read, Edit, and Write tools, which run outside the sandbox (a `Read(...)` deny rule alone also blocks Edit and Write on the same path, so `permissions.deny` holds no `Edit(...)` rules), while the sandbox settings cover Bash subprocesses. Keep both lists in step when adding a path. The one exception is `~/.config/gh/`, which is not in `denyRead` (see "GitHub credentials and network").
 
 ## GitHub credentials and network
 

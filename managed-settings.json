@@ -8,21 +8,13 @@
     ],
     "deny": [
       "Read(~/.config/op/**)",
-      "Edit(~/.config/op/**)",
       "Read(~/.aws/**)",
-      "Edit(~/.aws/**)",
       "Read(~/.config/gh/**)",
-      "Edit(~/.config/gh/**)",
       "Read(//run/secrets/*)",
-      "Edit(//run/secrets/*)",
       "Read(**/.env)",
       "Read(**/.env.*)",
-      "Edit(**/.env)",
-      "Edit(**/.env.*)",
       "Read(~/.ssh/**)",
-      "Edit(~/.ssh/**)",
-      "Read(~/datasets/**)",
-      "Edit(~/datasets/**)"
+      "Read(~/datasets/**)"
     ]
   },
   "sandbox": {
