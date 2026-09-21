@@ -19,6 +19,12 @@ def json_settings() -> Any:
 
 
 @pytest.fixture
+def permission_rules(yaml_settings: Any) -> list[str]:
+    permissions = yaml_settings.get("permissions", {})
+    return [rule for key in ("allow", "ask", "deny") for rule in permissions.get(key, [])]
+
+
+@pytest.fixture
 def valid_source(tmp_path: Path) -> Path:
     source = tmp_path / "valid.yaml"
     source.write_text("permissions:\n  deny:\n    - \"Read(~/.ssh/**)\"\n", encoding="utf-8")
