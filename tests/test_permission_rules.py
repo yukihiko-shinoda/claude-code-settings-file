@@ -2,6 +2,7 @@ import re
 
 # Read/Edit rules anchor a single leading "/" at the settings source, not at the filesystem root. Absolute paths need "//".
 SINGLE_SLASH_PATH_RULE = re.compile(r"^(Read|Edit)\(/(?!/)")
+WRITE_RULE = re.compile(r"^Write(\(|$)")
 
 
 class TestPermissionRules:
@@ -15,4 +16,17 @@ class TestPermissionRules:
         > source, not the filesystem root. Use `//Users/alice/file` for absolute paths.
         """
         offenders = [rule for rule in permission_rules if SINGLE_SLASH_PATH_RULE.match(rule)]
+        assert offenders == []
+
+    def test_rules_are_not_defined_by_write(self, permission_rules: list[str]) -> None:
+        """Ensure file-editing rules are written as `Edit(...)`, not `Write(...)`.
+
+        An `Edit(...)` rule already applies to the Write tool, so a separate `Write(...)` rule is redundant.
+
+        - Configure tools with permission rules and hooks | Tools reference - Claude Code Docs
+          https://code.claude.com/docs/en/tools-reference#configure-tools-with-permission-rules-and-hooks
+
+        > | `Edit(/src/**)` | Edit, Write, NotebookEdit | [Path pattern matching](/docs/en/permissions#read-and-edit) |
+        """
+        offenders = [rule for rule in permission_rules if WRITE_RULE.match(rule)]
         assert offenders == []
