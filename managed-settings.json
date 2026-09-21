@@ -1,0 +1,75 @@
+{
+  "permissions": {
+    "allow": [],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git * push*)",
+      "Bash(rm*)"
+    ],
+    "deny": [
+      "Read(~/.config/op/**)",
+      "Edit(~/.config/op/**)",
+      "Read(~/.aws/**)",
+      "Edit(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Edit(~/.config/gh/**)",
+      "Read(//run/secrets/*)",
+      "Edit(//run/secrets/*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Read(~/.ssh/**)",
+      "Edit(~/.ssh/**)",
+      "Read(~/datasets/**)",
+      "Edit(~/datasets/**)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "enableWeakerNestedSandbox": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "credentials": {
+      "files": [
+        {
+          "path": "~/.config/gh/hosts.yml",
+          "mode": "mask",
+          "extract": "oauth_token:\\s*(\\S+)",
+          "onExtractNoMatch": "deny",
+          "injectHosts": [
+            "api.github.com"
+          ]
+        }
+      ]
+    },
+    "filesystem": {
+      "denyRead": [
+        "~/.config/op/",
+        "~/.aws/",
+        "/run/secrets/",
+        "**/.env",
+        "**/.env.*",
+        "~/.ssh/",
+        "~/datasets"
+      ],
+      "denyWrite": [
+        "~/.config/op/",
+        "~/.aws/",
+        "~/.config/gh/",
+        "/run/secrets/",
+        "**/.env",
+        "**/.env.*",
+        "~/.ssh/",
+        "~/datasets"
+      ]
+    },
+    "network": {
+      "tlsTerminate": {},
+      "allowedDomains": [
+        "api.github.com",
+        "github.com"
+      ]
+    }
+  }
+}

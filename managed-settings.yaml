@@ -1,0 +1,199 @@
+permissions:
+  # Important! We need to start with `//` for absolute paths!:
+  # - Configure permissions - Claude Code Docs
+  #   https://code.claude.com/docs/en/permissions#read-and-edit
+  # > A pattern like /Users/alice/file isn’t an absolute path.
+  # > The single leading slash anchors at the settings source, not the filesystem root.
+  # > Use //Users/alice/file for absolute paths.
+  # 
+  # - Configure permissions - Claude Code Docs
+  #   https://code.claude.com/docs/en/permissions#compound-commands
+  # > Claude Code is aware of shell operators,
+  # > so a rule like Bash(safe-cmd *) won’t give it permission to run the command safe-cmd && other-cmd.
+  # > The recognized command separators are &&, ||, ;, |, |&, &, and newlines.
+  # > A rule must match each subcommand independently.
+  # > When && or || has nothing after it, such as in npm test &&,
+  # > Claude Code treats the command as unparseable and doesn’t split it into subcommands for allow-rule matching,
+  # > so a rule such as Bash(npm *) doesn’t approve it.
+  # 
+  # Basic policy:
+  # In contrast to the filesystem rules, 
+  # We don't use :*`, we only use `*` for wildcards:
+  # - Wildcard patterns | Configure permissions - Claude Code Docs
+  #   https://code.claude.com/docs/en/permissions#wildcard-patterns
+  # > The :* suffix is an equivalent way to write a trailing wildcard,
+  # > so Bash(ls:*) matches the same commands as Bash(ls *).
+  # > The permission dialog writes the space-separated form when you select “Yes, and don’t ask again” for a command prefix.
+  # > The :* form is only recognized at the end of a pattern.
+  # > In a pattern like Bash(git:* push), the colon is treated as a literal character and won’t match git commands.
+  # In most cases, we don't define `allow` rules and delegate to the auto mode classifier.
+  # We only define `allow` when:
+  # - Claude Code auto mode classifier escalates to user to approve the command.
+  # - The tool is almost always safe to run the command.
+  allow: []
+  # The operations that are risky but may be required in development should be defined in ask rather than deny.
+  # Too strict permission.deny may cause unexpected results since Claude Code attempts to avoid denied operations like shadow IT.
+  # For example, when we deny rm commands, Claude Code removes files by `find --delete` instead.
+  ask:
+    # To check force push, to main, and remove remote branches and tags
+    - "Bash(git push*)"
+    # To check pushes written with options before the subcommand, such as `git -C <path> push`.
+    # It still misses forms such as `git 'push'`, and it also asks for a command that merely contains ` push`
+    # after `git`, such as `git commit -m "fix push"`. For a complete check, inspect the command in a PreToolUse hook:
+    # - What a Bash rule doesn't match | Configure permissions - Claude Code Docs
+    #   https://code.claude.com/docs/en/permissions#bash-rule-limits
+    # > It doesn't match the same program invoked in a different form,
+    # > so a deny or ask rule covers the invocation Claude usually produces and isn't a security boundary around the program.
+    # - Wildcard patterns | Configure permissions - Claude Code Docs
+    #   https://code.claude.com/docs/en/permissions#wildcard-patterns
+    # > A `*` can go anywhere in the rule: at the start, in the middle, or at the end.
+    - "Bash(git * push*)"
+    # To check important file deletions
+    - "Bash(rm*)"
+  # We define `deny` rules for operations that are completely unnecessary in development.
+  # If we need to limit an operation that is not completely unnecessary, we should define it in `ask` rather than `deny`.
+  deny:
+    # 1Password configuration
+    - "Read(~/.config/op/**)"
+    - "Edit(~/.config/op/**)"
+    # AWS configuration
+    - "Read(~/.aws/**)"
+    - "Edit(~/.aws/**)"
+    # GitHub CLI configuration
+    - "Read(~/.config/gh/**)"
+    - "Edit(~/.config/gh/**)"
+    # Docker secrets
+    - "Read(//run/secrets/*)"
+    - "Edit(//run/secrets/*)"
+    # Environment variables
+    - "Read(**/.env)"
+    - "Read(**/.env.*)"
+    - "Edit(**/.env)"
+    - "Edit(**/.env.*)"
+    # Private keys
+    - "Read(~/.ssh/**)"
+    - "Edit(~/.ssh/**)"
+    # Data for analyzing tasks:
+    # - Techniques that are invisible to Cloud Code: Analyzing data that cannot be input into AI
+    #   https://zenn.dev/green_tea/articles/a994964786cb4f
+    - "Read(~/datasets/**)"
+    - "Edit(~/datasets/**)"
+sandbox:
+  # Claude Code user should always enable the sandbox for security:
+  # - Configure the sandboxed Bash tool - Claude Code Docs
+  #   https://code.claude.com/docs/en/sandboxing
+  enabled: true
+  # This setting assumes that the running environment is a Docker container:
+  # - Troubleshooting | Configure the sandboxed Bash tool - Claude Code Docs
+  #   https://code.claude.com/docs/en/sandboxing#troubleshooting
+  # > Bubblewrap fails to start inside a container: in an unprivileged container,
+  # > bubblewrap can’t mount a fresh /proc filesystem,
+  # > so sandboxed commands fail with a bwrap error such as Can't mount proc on /newroot/proc: Operation not permitted.
+  # > Set enableWeakerNestedSandbox to true so the inner sandbox bind-mounts the container’s existing /proc instead.
+  # > Only use this setting when the outer container already provides the isolation boundary you need,
+  # > since it exposes process information to sandboxed commands that a fresh /proc mount would hide.
+  enableWeakerNestedSandbox: true
+  # For security:
+  # - Get started | Configure the sandboxed Bash tool - Claude Code Docs
+  #   https://code.claude.com/docs/en/sandboxing#get-started
+  # > This is intended for managed deployments that require sandboxing as a security gate.
+  failIfUnavailable: true
+  # For security:
+  # - Configure the sandboxed Bash tool - Claude Code Docs
+  #   https://code.claude.com/docs/en/sandboxing#the-unsandboxed-retry-escape-hatch
+  # > Claude Code includes an escape hatch: Claude analyzes the violation
+  # > and may retry the command with the dangerouslyDisableSandbox parameter.
+  allowUnsandboxedCommands: false
+  credentials:
+    files:
+      # For `gh` authentication without exposing the PAT to sandboxed commands.
+      # The PAT lives in `hosts.yml` (on tmpfs) instead of an environment variable:
+      # - Mask credential files | Configure the sandboxed Bash tool - Claude Code Docs
+      #   https://code.claude.com/docs/en/sandboxing#mask-credential-files
+      # > sandboxed commands read a sentinel copy of the file, a stand-in whose secret is replaced with a placeholder value,
+      # > and the sandbox proxy substitutes the real value on egress.
+      - path: "~/.config/gh/hosts.yml"
+        mode: mask
+        # Replaces only the token, so `gh` still parses the rest of `hosts.yml`:
+        # > Claude Code applies the regular expression across the whole file
+        # > and replaces only the text captured by group 1 of each match,
+        # > so `gh` still parses its config and only the token is a placeholder.
+        extract: "oauth_token:\\s*(\\S+)"
+        # Fails closed when the pattern misses the token:
+        # > `warn`, the default, warns and skips the entry, so sandboxed commands can read the real file unmasked.
+        # > if the secret might be present but the pattern might miss it, use `deny`
+        onExtractNoMatch: deny
+        injectHosts:
+          - "api.github.com"
+  filesystem:
+    # Values are quoted because YAML reads an unquoted leading `*` as an alias.
+    denyRead:
+      # 1Password configuration
+      - "~/.config/op/"
+      # AWS configuration
+      - "~/.aws/"
+      # GitHub CLI configuration is intentionally not listed here. `hosts.yml` is protected by `mask` instead.
+      # Listing `~/.config/gh/` here, with `allowRead` re-opening `hosts.yml`, breaks the `extract` of the `mask`:
+      # the whole file is replaced with one sentinel (no `github_pat_` left, but `gh` fails with `invalid format`).
+      # Removing this entry restored the expected result, where only the token is a placeholder (verified by testing).
+      # The docs describe that whole-file replacement only for a `mask` entry without `extract`:
+      # - Mask credential files | Configure the sandboxed Bash tool - Claude Code Docs
+      #   https://code.claude.com/docs/en/sandboxing#mask-credential-files
+      # > Without `extract`, Claude Code replaces the entire file content with one sentinel value,
+      # > which suits a file that holds a single bare secret and nothing else.
+      # A similar combination of `denyRead` and `allowRead` also breaks the same `mask` in
+      # anthropics/claude-code#95135, where `hosts.yml` disappears entirely instead:
+      # https://github.com/anthropics/claude-code/issues/95135
+      # `denyWrite` below still lists the directory.
+      # - "~/.config/gh/"
+      # Docker secrets default location
+      - "/run/secrets/"
+      # Environment variables
+      - "**/.env"
+      - "**/.env.*"
+      # Private keys
+      - "~/.ssh/"
+      # Datasets for analysis
+      - "~/datasets"
+    denyWrite:
+      # 1Password configuration
+      - "~/.config/op/"
+      # AWS configuration
+      - "~/.aws/"
+      # GitHub CLI configuration
+      - "~/.config/gh/"
+      # Docker secrets default location
+      - "/run/secrets/"
+      # Environment variables
+      - "**/.env"
+      - "**/.env.*"
+      # Private keys
+      - "~/.ssh/"
+      # Datasets for analysis
+      - "~/datasets"
+  network:
+    # Required by `mask` in `credentials.files`:
+    # - Mask credential files | Configure the sandboxed Bash tool - Claude Code Docs
+    #   https://code.claude.com/docs/en/sandboxing#mask-credential-files
+    # > On every platform, Claude Code applies the `network.tlsTerminate` requirement and `injectHosts`
+    # > the same way as for masked environment variables
+    # - Mask environment variables | Configure the sandboxed Bash tool - Claude Code Docs
+    #   https://code.claude.com/docs/en/sandboxing#mask-environment-variables
+    # > The proxy substitutes the credential inside request contents, so it has to see them.
+    # > Set `network.tlsTerminate` so the proxy terminates TLS itself.
+    tlsTerminate: {}
+    allowedDomains:
+      # > The proxy injects only on connections the domain allowlist admits,
+      # > so each `injectHosts` destination must also be reachable through `network.allowedDomains`.
+      - "api.github.com"
+      # `git fetch` over HTTPS connects to github.com, not api.github.com, so it fails with
+      # `CONNECT tunnel failed, response 403` unless github.com is listed here (verified by testing).
+      # Note that github.com is a broad domain, so it can be a path for data exfiltration:
+      # - Network isolation | Configure the sandboxed Bash tool - Claude Code Docs
+      #   https://code.claude.com/docs/en/sandboxing#network-isolation
+      # > Claude Code pre-allows no domains by default.
+      # > pre-allow domains with `allowedDomains` to avoid the prompt entirely.
+      # - Security limitations | Configure the sandboxed Bash tool - Claude Code Docs
+      #   https://code.claude.com/docs/en/sandboxing#security-limitations
+      # > Allowing broad domains such as `github.com` can create paths for data exfiltration.
+      - "github.com"

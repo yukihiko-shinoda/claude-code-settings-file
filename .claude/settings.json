@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run invoke clean*)",
+      "Bash(uv run invoke dist*)",
+      "Bash(uv run invoke lint*)",
+      "Bash(uv run invoke path*)",
+      "Bash(uv run invoke style*)",
+      "Bash(uv run invoke test*)",
+      "Bash(uv run pytest*)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true
+  }
+}
