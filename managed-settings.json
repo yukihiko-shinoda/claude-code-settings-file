@@ -36,6 +36,9 @@
       ]
     },
     "filesystem": {
+      "allowWrite": [
+        "~/.cache/uv/.lock"
+      ],
       "denyRead": [
         "~/.config/op/",
         "~/.aws/",

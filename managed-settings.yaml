@@ -124,6 +124,9 @@ sandbox:
         injectHosts:
           - "api.github.com"
   filesystem:
+    # To run `uv run` in sandboxed commands, since uv opens this lock file for writing even when nothing needs to be installed.
+    allowWrite:
+      - "~/.cache/uv/.lock"
     # Values are quoted because YAML reads an unquoted leading `*` as an alias.
     denyRead:
       # 1Password configuration
